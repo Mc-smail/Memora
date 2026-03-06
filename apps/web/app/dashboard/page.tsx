@@ -14,7 +14,6 @@ type Task = {
   id: string;
   title: string;
   completed: boolean;
-
   subject?: string | null;
   dueDate?: string | null;
   priority?: "low" | "medium" | "high" | string;
@@ -30,10 +29,9 @@ export default function DashboardPage() {
   const [user, setUser] = useState<User | null>(null);
   const [tasks, setTasks] = useState<Task[]>([]);
 
-  // Create form fields
   const [title, setTitle] = useState("");
   const [subject, setSubject] = useState("");
-  const [dueDate, setDueDate] = useState(""); // yyyy-mm-dd
+  const [dueDate, setDueDate] = useState("");
   const [priority, setPriority] = useState<"low" | "medium" | "high">("medium");
   const [notes, setNotes] = useState("");
 
@@ -44,14 +42,20 @@ export default function DashboardPage() {
   const [filter, setFilter] = useState<Filter>("all");
   const [sort, setSort] = useState<Sort>("newest");
 
-  // Edit modal
   const [editing, setEditing] = useState<Task | null>(null);
   const [eTitle, setETitle] = useState("");
   const [eSubject, setESubject] = useState("");
-  const [eDueDate, setEDueDate] = useState(""); // yyyy-mm-dd
+  const [eDueDate, setEDueDate] = useState("");
   const [ePriority, setEPriority] = useState<"low" | "medium" | "high">("medium");
   const [eNotes, setENotes] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
+
+  function getGreeting() {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Guten Morgen";
+    if (hour < 18) return "Guten Tag";
+    return "Guten Abend";
+  }
 
   function logout() {
     localStorage.removeItem("token");
@@ -60,6 +64,7 @@ export default function DashboardPage() {
 
   async function loadData() {
     const token = localStorage.getItem("token");
+
     if (!token) {
       router.push("/login");
       return;
@@ -68,8 +73,8 @@ export default function DashboardPage() {
     try {
       setError(null);
 
-      const userData = await apiFetch("/me");
-      const tasksData = await apiFetch("/tasks");
+      const userData = await apiFetch<User>("/me");
+      const tasksData = await apiFetch<any>("/tasks");
 
       const tasksList: Task[] = Array.isArray(tasksData)
         ? tasksData
@@ -77,7 +82,8 @@ export default function DashboardPage() {
 
       setUser(userData);
       setTasks(tasksList);
-    } catch (err) {
+    } catch (err: any) {
+      setError(err.message || "Dashboard konnte nicht geladen werden");
       localStorage.removeItem("token");
       router.push("/login");
     } finally {
@@ -87,8 +93,18 @@ export default function DashboardPage() {
 
   useEffect(() => {
     loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === "Escape" && editing && !savingEdit) {
+        closeEdit();
+      }
+    }
+
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [editing, savingEdit]);
 
   async function createTask(e: React.FormEvent) {
     e.preventDefault();
@@ -104,7 +120,7 @@ export default function DashboardPage() {
         body: JSON.stringify({
           title: trimmed,
           subject: subject.trim() || null,
-          dueDate: dueDate ? dueDate : null,
+          dueDate: dueDate || null,
           priority,
           notes: notes.trim() || null,
         }),
@@ -179,6 +195,7 @@ export default function DashboardPage() {
   function startOfDay(d: Date) {
     return new Date(d.getFullYear(), d.getMonth(), d.getDate());
   }
+
   function isSameDay(a: Date, b: Date) {
     return (
       a.getFullYear() === b.getFullYear() &&
@@ -186,6 +203,7 @@ export default function DashboardPage() {
       a.getDate() === b.getDate()
     );
   }
+
   function isInNext7Days(date: Date) {
     const today = startOfDay(new Date());
     const in7 = new Date(today);
@@ -193,7 +211,6 @@ export default function DashboardPage() {
     return date >= today && date <= in7;
   }
 
-  // ✅ Upcoming lists
   const upcoming = useMemo(() => {
     const today = startOfDay(new Date());
 
@@ -211,21 +228,21 @@ export default function DashboardPage() {
         const d = toDate(t);
         return d ? d < today : false;
       })
-      .sort((a, b) => (toDate(a)!.getTime() - toDate(b)!.getTime()));
+      .sort((a, b) => toDate(a)!.getTime() - toDate(b)!.getTime());
 
     const todayList = notDone
       .filter((t) => {
         const d = toDate(t);
         return d ? isSameDay(d, today) : false;
       })
-      .sort((a, b) => (toDate(a)!.getTime() - toDate(b)!.getTime()));
+      .sort((a, b) => toDate(a)!.getTime() - toDate(b)!.getTime());
 
     const week = notDone
       .filter((t) => {
         const d = toDate(t);
         return d ? isInNext7Days(d) && !isSameDay(d, today) : false;
       })
-      .sort((a, b) => (toDate(a)!.getTime() - toDate(b)!.getTime()));
+      .sort((a, b) => toDate(a)!.getTime() - toDate(b)!.getTime());
 
     const later = notDone
       .filter((t) => {
@@ -235,7 +252,7 @@ export default function DashboardPage() {
         in7.setDate(in7.getDate() + 7);
         return d > in7;
       })
-      .sort((a, b) => (toDate(a)!.getTime() - toDate(b)!.getTime()));
+      .sort((a, b) => toDate(a)!.getTime() - toDate(b)!.getTime());
 
     const noDate = notDone.filter((t) => !toDate(t));
 
@@ -331,7 +348,7 @@ export default function DashboardPage() {
               ...t,
               title: trimmed,
               subject: eSubject.trim() || null,
-              dueDate: eDueDate ? eDueDate : null,
+              dueDate: eDueDate || null,
               priority: ePriority,
               notes: eNotes.trim() || null,
             }
@@ -345,7 +362,7 @@ export default function DashboardPage() {
         body: JSON.stringify({
           title: trimmed,
           subject: eSubject.trim() || null,
-          dueDate: eDueDate ? eDueDate : null,
+          dueDate: eDueDate || null,
           priority: ePriority,
           notes: eNotes.trim() || null,
         }),
@@ -370,11 +387,10 @@ export default function DashboardPage() {
 
   return (
     <main style={{ maxWidth: 760, margin: "40px auto", padding: 16 }}>
-      {/* Header */}
       <div style={{ display: "flex", justifyContent: "space-between", gap: 16 }}>
         <div>
           <h1 style={{ fontSize: 26, fontWeight: 900, color: "white" }}>
-            Hallo {user?.name} 👋
+            {getGreeting()} {user?.name || "Lernender"} 👋
           </h1>
           <p style={{ marginTop: 6, opacity: 0.7, color: "white" }}>{user?.email}</p>
 
@@ -402,45 +418,18 @@ export default function DashboardPage() {
         </button>
       </div>
 
-      {/* ✅ Upcoming */}
       <div style={{ marginTop: 18 }}>
         <h2 style={{ fontWeight: 900, color: "white", marginBottom: 10 }}>Upcoming</h2>
 
-        <UpcomingSection
-          title="Überfällig"
-          tone="high"
-          tasks={upcoming.overdue}
-          onOpen={openEdit}
-        />
-        <UpcomingSection
-          title="Heute"
-          tone="medium"
-          tasks={upcoming.todayList}
-          onOpen={openEdit}
-        />
-        <UpcomingSection
-          title="Diese Woche"
-          tone="low"
-          tasks={upcoming.week}
-          onOpen={openEdit}
-        />
-        <UpcomingSection
-          title="Später"
-          tone="neutral"
-          tasks={upcoming.later}
-          onOpen={openEdit}
-        />
-        <UpcomingSection
-          title="Ohne Datum"
-          tone="neutral"
-          tasks={upcoming.noDate}
-          onOpen={openEdit}
-        />
+        <UpcomingSection title="Überfällig" tone="high" tasks={upcoming.overdue} onOpen={openEdit} />
+        <UpcomingSection title="Heute" tone="medium" tasks={upcoming.todayList} onOpen={openEdit} />
+        <UpcomingSection title="Diese Woche" tone="low" tasks={upcoming.week} onOpen={openEdit} />
+        <UpcomingSection title="Später" tone="neutral" tasks={upcoming.later} onOpen={openEdit} />
+        <UpcomingSection title="Ohne Datum" tone="neutral" tasks={upcoming.noDate} onOpen={openEdit} />
       </div>
 
       <hr style={{ margin: "24px 0", borderColor: "#222" }} />
 
-      {/* Create */}
       <h2 style={{ marginBottom: 10, fontWeight: 900, color: "white" }}>Neue Study Task</h2>
 
       <form onSubmit={createTask} style={{ display: "grid", gap: 10 }}>
@@ -450,6 +439,7 @@ export default function DashboardPage() {
           onChange={(e) => setTitle(e.target.value)}
           style={inputStyle}
         />
+
         <input
           placeholder="Fach (z.B. Mathe)"
           value={subject}
@@ -458,8 +448,18 @@ export default function DashboardPage() {
         />
 
         <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-          <input type="date" value={dueDate} onChange={(e) => setDueDate(e.target.value)} style={inputStyle} />
-          <select value={priority} onChange={(e) => setPriority(e.target.value as any)} style={inputStyle}>
+          <input
+            type="date"
+            value={dueDate}
+            onChange={(e) => setDueDate(e.target.value)}
+            style={inputStyle}
+          />
+
+          <select
+            value={priority}
+            onChange={(e) => setPriority(e.target.value as any)}
+            style={inputStyle}
+          >
             <option value="low">Low</option>
             <option value="medium">Medium</option>
             <option value="high">High</option>
@@ -490,7 +490,6 @@ export default function DashboardPage() {
         </button>
       </form>
 
-      {/* Filter + Sort */}
       <div
         style={{
           marginTop: 14,
@@ -512,7 +511,11 @@ export default function DashboardPage() {
 
         <div style={{ display: "flex", gap: 8, alignItems: "center", color: "white" }}>
           <span style={{ opacity: 0.7, fontSize: 14 }}>Sort:</span>
-          <select value={sort} onChange={(e) => setSort(e.target.value as Sort)} style={{ ...inputStyle, padding: "8px 10px" }}>
+          <select
+            value={sort}
+            onChange={(e) => setSort(e.target.value as Sort)}
+            style={{ ...inputStyle, padding: "8px 10px" }}
+          >
             <option value="newest">Neueste</option>
             <option value="oldest">Älteste</option>
             <option value="title">Titel A-Z</option>
@@ -536,107 +539,122 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* List */}
       <div style={{ marginTop: 16, display: "grid", gap: 10 }}>
-        {filteredSortedTasks.map((task) => {
-          const due = formatDueDate(task.dueDate);
-          const tone =
-            String(task.priority) === "low"
-              ? "low"
-              : String(task.priority) === "high"
-              ? "high"
-              : "medium";
+        {filteredSortedTasks.length === 0 ? (
+          <div
+            style={{
+              border: "1px solid #222",
+              background: "#0b0b0b",
+              borderRadius: 14,
+              padding: 18,
+              color: "#bbb",
+              textAlign: "center",
+            }}
+          >
+            Keine Tasks gefunden.
+          </div>
+        ) : (
+          filteredSortedTasks.map((task) => {
+            const due = formatDueDate(task.dueDate);
+            const tone =
+              String(task.priority) === "low"
+                ? "low"
+                : String(task.priority) === "high"
+                ? "high"
+                : "medium";
 
-          return (
-            <div
-              key={task.id}
-              style={{
-                padding: 12,
-                border: "1px solid #333",
-                borderRadius: 14,
-                display: "flex",
-                justifyContent: "space-between",
-                gap: 12,
-                background: "#0b0b0b",
-                color: "white",
-              }}
-            >
-              <div style={{ display: "grid", gap: 6 }}>
-                <label style={{ display: "flex", alignItems: "center", gap: 10 }}>
-                  <input
-                    type="checkbox"
-                    checked={task.completed}
-                    onChange={() => toggleTask(task.id, task.completed)}
-                  />
+            return (
+              <div
+                key={task.id}
+                style={{
+                  padding: 12,
+                  border: "1px solid #333",
+                  borderRadius: 14,
+                  display: "flex",
+                  justifyContent: "space-between",
+                  gap: 12,
+                  background: "#0b0b0b",
+                  color: "white",
+                }}
+              >
+                <div style={{ display: "grid", gap: 6 }}>
+                  <label style={{ display: "flex", alignItems: "center", gap: 10 }}>
+                    <input
+                      type="checkbox"
+                      checked={task.completed}
+                      onChange={() => toggleTask(task.id, task.completed)}
+                    />
+                    <button
+                      type="button"
+                      onClick={() => openEdit(task)}
+                      style={{
+                        border: "none",
+                        background: "transparent",
+                        color: "white",
+                        fontWeight: 900,
+                        padding: 0,
+                        cursor: "pointer",
+                        textAlign: "left",
+                        textDecoration: "underline",
+                        opacity: task.completed ? 0.6 : 1,
+                      }}
+                      title="Bearbeiten"
+                    >
+                      {task.title}
+                    </button>
+                  </label>
+
+                  <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
+                    {task.subject && <Badge label={`Fach: ${task.subject}`} />}
+                    {task.priority && (
+                      <Badge label={`Prio: ${String(task.priority)}`} tone={tone as any} />
+                    )}
+                    {due && <Badge label={`Fällig: ${due}`} />}
+                  </div>
+
+                  {task.notes && <div style={{ color: "#ddd", fontSize: 14 }}>{task.notes}</div>}
+                </div>
+
+                <div style={{ display: "flex", gap: 8 }}>
                   <button
                     type="button"
                     onClick={() => openEdit(task)}
                     style={{
-                      border: "none",
-                      background: "transparent",
+                      padding: "8px 12px",
+                      borderRadius: 10,
+                      border: "1px solid #333",
+                      background: "#111",
                       color: "white",
-                      fontWeight: 900,
-                      padding: 0,
                       cursor: "pointer",
-                      textAlign: "left",
-                      textDecoration: "underline",
-                      opacity: task.completed ? 0.6 : 1,
+                      fontWeight: 900,
+                      height: 38,
                     }}
-                    title="Bearbeiten"
                   >
-                    {task.title}
+                    Edit
                   </button>
-                </label>
-
-                <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                  {task.subject && <Badge label={`Fach: ${task.subject}`} />}
-                  {task.priority && <Badge label={`Prio: ${String(task.priority)}`} tone={tone as any} />}
-                  {due && <Badge label={`Fällig: ${due}`} />}
+                  <button
+                    type="button"
+                    onClick={() => deleteTask(task.id)}
+                    style={{
+                      padding: "8px 12px",
+                      borderRadius: 10,
+                      border: "1px solid #333",
+                      background: "#1a1a1a",
+                      color: "#ff4d4d",
+                      cursor: "pointer",
+                      fontWeight: 900,
+                      height: 38,
+                    }}
+                  >
+                    Delete
+                  </button>
                 </div>
-
-                {task.notes && <div style={{ color: "#ddd", fontSize: 14 }}>{task.notes}</div>}
               </div>
-
-              <div style={{ display: "flex", gap: 8 }}>
-                <button
-                  type="button"
-                  onClick={() => openEdit(task)}
-                  style={{
-                    padding: "8px 12px",
-                    borderRadius: 10,
-                    border: "1px solid #333",
-                    background: "#111",
-                    color: "white",
-                    cursor: "pointer",
-                    fontWeight: 900,
-                    height: 38,
-                  }}
-                >
-                  Edit
-                </button>
-                <button
-                  type="button"
-                  onClick={() => deleteTask(task.id)}
-                  style={{
-                    padding: "8px 12px",
-                    borderRadius: 10,
-                    border: "1px solid #333",
-                    background: "#1a1a1a",
-                    color: "#ff4d4d",
-                    cursor: "pointer",
-                    fontWeight: 900,
-                    height: 38,
-                  }}
-                >
-                  Delete
-                </button>
-              </div>
-            </div>
-          );
-        })}
+            );
+          })
+        )}
       </div>
 
-      {/* Edit Modal */}
       {editing && (
         <div
           onClick={() => {
@@ -693,15 +711,30 @@ export default function DashboardPage() {
               <input value={eSubject} onChange={(e) => setESubject(e.target.value)} placeholder="Fach" style={inputStyle} />
 
               <div style={{ display: "flex", gap: 10, flexWrap: "wrap" }}>
-                <input type="date" value={eDueDate} onChange={(e) => setEDueDate(e.target.value)} style={inputStyle} />
-                <select value={ePriority} onChange={(e) => setEPriority(e.target.value as any)} style={inputStyle}>
+                <input
+                  type="date"
+                  value={eDueDate}
+                  onChange={(e) => setEDueDate(e.target.value)}
+                  style={inputStyle}
+                />
+                <select
+                  value={ePriority}
+                  onChange={(e) => setEPriority(e.target.value as any)}
+                  style={inputStyle}
+                >
                   <option value="low">Low</option>
                   <option value="medium">Medium</option>
                   <option value="high">High</option>
                 </select>
               </div>
 
-              <textarea value={eNotes} onChange={(e) => setENotes(e.target.value)} placeholder="Notizen" rows={4} style={inputStyle} />
+              <textarea
+                value={eNotes}
+                onChange={(e) => setENotes(e.target.value)}
+                placeholder="Notizen"
+                rows={4}
+                style={inputStyle}
+              />
 
               <div style={{ display: "flex", justifyContent: "flex-end", gap: 10 }}>
                 <button
@@ -804,9 +837,7 @@ function UpcomingSection({
           </button>
         ))}
         {tasks.length > 5 && (
-          <div style={{ opacity: 0.7, color: "white" }}>
-            +{tasks.length - 5} mehr…
-          </div>
+          <div style={{ opacity: 0.7, color: "white" }}>+{tasks.length - 5} mehr…</div>
         )}
       </div>
     </div>

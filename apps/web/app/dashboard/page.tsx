@@ -53,6 +53,27 @@ export default function DashboardPage() {
   const [eNotes, setENotes] = useState("");
   const [savingEdit, setSavingEdit] = useState(false);
 
+  const [theme, setTheme] = useState<"dark" | "light">("dark");
+
+  const isDark = theme === "dark";
+
+  const pageStyle: React.CSSProperties = {
+    maxWidth: 760,
+    margin: "40px auto",
+    padding: 16,
+    minHeight: "100vh",
+    background: isDark ? "black" : "#f7f7f7",
+    color: isDark ? "white" : "black",
+  };
+
+  const inputStyle: React.CSSProperties = {
+    padding: 10,
+    border: isDark ? "1px solid #333" : "1px solid #ddd",
+    borderRadius: 10,
+    background: isDark ? "#0b0b0b" : "white",
+    color: isDark ? "white" : "black",
+  };
+
   function getGreeting() {
     const hour = new Date().getHours();
     if (hour < 12) return "Guten Morgen";
@@ -63,6 +84,12 @@ export default function DashboardPage() {
   function logout() {
     localStorage.removeItem("token");
     router.push("/login");
+  }
+
+  function toggleTheme() {
+    const nextTheme = theme === "dark" ? "light" : "dark";
+    setTheme(nextTheme);
+    localStorage.setItem("theme", nextTheme);
   }
 
   async function loadData() {
@@ -95,6 +122,13 @@ export default function DashboardPage() {
 
   useEffect(() => {
     loadData();
+  }, []);
+
+  useEffect(() => {
+    const savedTheme = localStorage.getItem("theme");
+    if (savedTheme === "light" || savedTheme === "dark") {
+      setTheme(savedTheme);
+    }
   }, []);
 
   useEffect(() => {
@@ -407,55 +441,79 @@ export default function DashboardPage() {
   }
 
   if (loading) {
-    return <p style={{ padding: 20 }}>Lade Dashboard...</p>;
+    return <p style={{ padding: 20, color: isDark ? "white" : "black" }}>Lade Dashboard...</p>;
   }
 
   return (
-    <main style={{ maxWidth: 760, margin: "40px auto", padding: 16 }}>
+    <main style={pageStyle}>
       <div style={{ display: "flex", justifyContent: "space-between", gap: 16 }}>
         <div>
-          <h1 style={{ fontSize: 26, fontWeight: 900, color: "white" }}>
+          <h1 style={{ fontSize: 26, fontWeight: 900, color: isDark ? "white" : "black" }}>
             {getGreeting()} {user?.name || "Lernender"} 👋
           </h1>
-          <p style={{ marginTop: 6, opacity: 0.7, color: "white" }}>{user?.email}</p>
+          <p style={{ marginTop: 6, opacity: 0.7, color: isDark ? "white" : "#444" }}>
+            {user?.email}
+          </p>
 
           <div style={{ marginTop: 10, display: "flex", gap: 10, flexWrap: "wrap" }}>
-            <Badge label={`Total: ${stats.total}`} />
-            <Badge label={`Offen: ${stats.open}`} />
-            <Badge label={`Erledigt: ${stats.done}`} />
+            <Badge label={`Total: ${stats.total}`} theme={theme} />
+            <Badge label={`Offen: ${stats.open}`} theme={theme} />
+            <Badge label={`Erledigt: ${stats.done}`} theme={theme} />
           </div>
         </div>
 
-        <button
-          onClick={logout}
-          style={{
-            padding: "10px 14px",
-            borderRadius: 10,
-            border: "1px solid #333",
-            background: "#111",
-            color: "white",
-            cursor: "pointer",
-            fontWeight: 800,
-            height: 40,
-          }}
-        >
-          Logout
-        </button>
+        <div style={{ display: "flex", gap: 10 }}>
+          <button
+            onClick={toggleTheme}
+            style={{
+              padding: "10px 14px",
+              borderRadius: 10,
+              border: isDark ? "1px solid #333" : "1px solid #ddd",
+              background: isDark ? "#111" : "white",
+              color: isDark ? "white" : "black",
+              cursor: "pointer",
+              fontWeight: 800,
+              height: 40,
+            }}
+          >
+            {theme === "dark" ? "☀️ Light" : "🌙 Dark"}
+          </button>
+
+          <button
+            onClick={logout}
+            style={{
+              padding: "10px 14px",
+              borderRadius: 10,
+              border: isDark ? "1px solid #333" : "1px solid #ddd",
+              background: isDark ? "#111" : "white",
+              color: isDark ? "white" : "black",
+              cursor: "pointer",
+              fontWeight: 800,
+              height: 40,
+            }}
+          >
+            Logout
+          </button>
+        </div>
       </div>
 
       <div style={{ marginTop: 18 }}>
-        <h2 style={{ fontWeight: 900, color: "white", marginBottom: 10 }}>Upcoming</h2>
+        <h2 style={{ fontWeight: 900, color: isDark ? "white" : "black", marginBottom: 10 }}>
+          Upcoming
+        </h2>
 
-        <UpcomingSection title="Überfällig" tone="high" tasks={upcoming.overdue} onOpen={openEdit} />
-        <UpcomingSection title="Heute" tone="medium" tasks={upcoming.todayList} onOpen={openEdit} />
-        <UpcomingSection title="Diese Woche" tone="low" tasks={upcoming.week} onOpen={openEdit} />
-        <UpcomingSection title="Später" tone="neutral" tasks={upcoming.later} onOpen={openEdit} />
-        <UpcomingSection title="Ohne Datum" tone="neutral" tasks={upcoming.noDate} onOpen={openEdit} />
+        <UpcomingSection title="Überfällig" tone="high" tasks={upcoming.overdue} onOpen={openEdit} theme={theme} />
+        <UpcomingSection title="Heute" tone="medium" tasks={upcoming.todayList} onOpen={openEdit} theme={theme} />
+        <UpcomingSection title="Diese Woche" tone="low" tasks={upcoming.week} onOpen={openEdit} theme={theme} />
+        <UpcomingSection title="Später" tone="neutral" tasks={upcoming.later} onOpen={openEdit} theme={theme} />
+        <UpcomingSection title="Ohne Datum" tone="neutral" tasks={upcoming.noDate} onOpen={openEdit} theme={theme} />
       </div>
 
-      <hr style={{ margin: "24px 0", borderColor: "#222" }} />
+      <hr style={{ margin: "24px 0", borderColor: isDark ? "#222" : "#ddd" }} />
 
-      <h2 style={{ marginBottom: 10, fontWeight: 900, color: "white" }}>Neue Study Task</h2>
+      <h2 style={{ marginBottom: 10, fontWeight: 900, color: isDark ? "white" : "black" }}>
+        Neue Study Task
+      </h2>
 
       <form onSubmit={createTask} style={{ display: "grid", gap: 10 }}>
         <input
@@ -504,9 +562,9 @@ export default function DashboardPage() {
           style={{
             padding: 12,
             borderRadius: 12,
-            border: "1px solid #333",
-            background: creating ? "#111" : "white",
-            color: creating ? "#aaa" : "black",
+            border: isDark ? "1px solid #333" : "1px solid #ddd",
+            background: creating ? (isDark ? "#111" : "#eee") : isDark ? "white" : "black",
+            color: creating ? "#888" : isDark ? "black" : "white",
             cursor: creating ? "not-allowed" : "pointer",
             fontWeight: 900,
           }}
@@ -531,6 +589,7 @@ export default function DashboardPage() {
           label="Alle Fächer"
           active={subjectFilter === "all"}
           onClick={() => setSubjectFilter("all")}
+          theme={theme}
         />
 
         {subjects.map((s) => (
@@ -539,6 +598,7 @@ export default function DashboardPage() {
             label={s}
             active={subjectFilter === s}
             onClick={() => setSubjectFilter(s)}
+            theme={theme}
           />
         ))}
       </div>
@@ -554,15 +614,15 @@ export default function DashboardPage() {
         }}
       >
         <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-          <Chip active={filter === "all"} onClick={() => setFilter("all")} label="Alle" />
-          <Chip active={filter === "open"} onClick={() => setFilter("open")} label="Offen" />
-          <Chip active={filter === "done"} onClick={() => setFilter("done")} label="Erledigt" />
-          <Chip active={filter === "today"} onClick={() => setFilter("today")} label="Heute" />
-          <Chip active={filter === "week"} onClick={() => setFilter("week")} label="Diese Woche" />
-          <Chip active={filter === "overdue"} onClick={() => setFilter("overdue")} label="Überfällig" />
+          <Chip active={filter === "all"} onClick={() => setFilter("all")} label="Alle" theme={theme} />
+          <Chip active={filter === "open"} onClick={() => setFilter("open")} label="Offen" theme={theme} />
+          <Chip active={filter === "done"} onClick={() => setFilter("done")} label="Erledigt" theme={theme} />
+          <Chip active={filter === "today"} onClick={() => setFilter("today")} label="Heute" theme={theme} />
+          <Chip active={filter === "week"} onClick={() => setFilter("week")} label="Diese Woche" theme={theme} />
+          <Chip active={filter === "overdue"} onClick={() => setFilter("overdue")} label="Überfällig" theme={theme} />
         </div>
 
-        <div style={{ display: "flex", gap: 8, alignItems: "center", color: "white" }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "center", color: isDark ? "white" : "black" }}>
           <span style={{ opacity: 0.7, fontSize: 14 }}>Sort:</span>
           <select
             value={sort}
@@ -580,7 +640,7 @@ export default function DashboardPage() {
         <div
           style={{
             marginTop: 12,
-            background: "#1b0707",
+            background: isDark ? "#1b0707" : "#ffe5e5",
             border: "1px solid #6b1a1a",
             padding: 10,
             borderRadius: 12,
@@ -596,11 +656,11 @@ export default function DashboardPage() {
         {filteredSortedTasks.length === 0 ? (
           <div
             style={{
-              border: "1px solid #222",
-              background: "#0b0b0b",
+              border: isDark ? "1px solid #222" : "1px solid #ddd",
+              background: isDark ? "#0b0b0b" : "white",
               borderRadius: 14,
               padding: 18,
-              color: "#bbb",
+              color: isDark ? "#bbb" : "#666",
               textAlign: "center",
             }}
           >
@@ -621,13 +681,13 @@ export default function DashboardPage() {
                 key={task.id}
                 style={{
                   padding: 12,
-                  border: "1px solid #333",
+                  border: isDark ? "1px solid #333" : "1px solid #ddd",
                   borderRadius: 14,
                   display: "flex",
                   justifyContent: "space-between",
                   gap: 12,
-                  background: "#0b0b0b",
-                  color: "white",
+                  background: isDark ? "#0b0b0b" : "white",
+                  color: isDark ? "white" : "black",
                 }}
               >
                 <div style={{ display: "grid", gap: 6 }}>
@@ -643,7 +703,7 @@ export default function DashboardPage() {
                       style={{
                         border: "none",
                         background: "transparent",
-                        color: "white",
+                        color: isDark ? "white" : "black",
                         fontWeight: 900,
                         padding: 0,
                         cursor: "pointer",
@@ -658,14 +718,18 @@ export default function DashboardPage() {
                   </label>
 
                   <div style={{ display: "flex", gap: 8, flexWrap: "wrap" }}>
-                    {task.subject && <Badge label={`Fach: ${task.subject}`} />}
+                    {task.subject && <Badge label={`Fach: ${task.subject}`} theme={theme} />}
                     {task.priority && (
-                      <Badge label={`Prio: ${String(task.priority)}`} tone={tone as any} />
+                      <Badge label={`Prio: ${String(task.priority)}`} tone={tone as any} theme={theme} />
                     )}
-                    {due && <Badge label={`Fällig: ${due}`} />}
+                    {due && <Badge label={`Fällig: ${due}`} theme={theme} />}
                   </div>
 
-                  {task.notes && <div style={{ color: "#ddd", fontSize: 14 }}>{task.notes}</div>}
+                  {task.notes && (
+                    <div style={{ color: isDark ? "#ddd" : "#444", fontSize: 14 }}>
+                      {task.notes}
+                    </div>
+                  )}
                 </div>
 
                 <div style={{ display: "flex", gap: 8 }}>
@@ -675,9 +739,9 @@ export default function DashboardPage() {
                     style={{
                       padding: "8px 12px",
                       borderRadius: 10,
-                      border: "1px solid #333",
-                      background: "#111",
-                      color: "white",
+                      border: isDark ? "1px solid #333" : "1px solid #ddd",
+                      background: isDark ? "#111" : "white",
+                      color: isDark ? "white" : "black",
                       cursor: "pointer",
                       fontWeight: 900,
                       height: 38,
@@ -691,8 +755,8 @@ export default function DashboardPage() {
                     style={{
                       padding: "8px 12px",
                       borderRadius: 10,
-                      border: "1px solid #333",
-                      background: "#1a1a1a",
+                      border: isDark ? "1px solid #333" : "1px solid #ddd",
+                      background: isDark ? "#1a1a1a" : "#fff5f5",
                       color: "#ff4d4d",
                       cursor: "pointer",
                       fontWeight: 900,
@@ -727,11 +791,11 @@ export default function DashboardPage() {
             onClick={(e) => e.stopPropagation()}
             style={{
               width: "min(620px, 100%)",
-              background: "#0b0b0b",
-              border: "1px solid #333",
+              background: isDark ? "#0b0b0b" : "white",
+              border: isDark ? "1px solid #333" : "1px solid #ddd",
               borderRadius: 16,
               padding: 16,
-              color: "white",
+              color: isDark ? "white" : "black",
             }}
           >
             <div style={{ display: "flex", justifyContent: "space-between", gap: 12 }}>
@@ -746,9 +810,9 @@ export default function DashboardPage() {
                 style={{
                   padding: "8px 12px",
                   borderRadius: 10,
-                  border: "1px solid #333",
-                  background: "#111",
-                  color: "white",
+                  border: isDark ? "1px solid #333" : "1px solid #ddd",
+                  background: isDark ? "#111" : "white",
+                  color: isDark ? "white" : "black",
                   cursor: savingEdit ? "not-allowed" : "pointer",
                   fontWeight: 900,
                   height: 38,
@@ -796,9 +860,9 @@ export default function DashboardPage() {
                   style={{
                     padding: "10px 14px",
                     borderRadius: 10,
-                    border: "1px solid #333",
-                    background: "#111",
-                    color: "white",
+                    border: isDark ? "1px solid #333" : "1px solid #ddd",
+                    background: isDark ? "#111" : "white",
+                    color: isDark ? "white" : "black",
                     cursor: savingEdit ? "not-allowed" : "pointer",
                     opacity: savingEdit ? 0.7 : 1,
                     fontWeight: 900,
@@ -813,9 +877,9 @@ export default function DashboardPage() {
                   style={{
                     padding: "10px 14px",
                     borderRadius: 10,
-                    border: "1px solid #333",
-                    background: "white",
-                    color: "black",
+                    border: isDark ? "1px solid #333" : "1px solid #ddd",
+                    background: isDark ? "white" : "black",
+                    color: isDark ? "black" : "white",
                     cursor: savingEdit ? "not-allowed" : "pointer",
                     opacity: savingEdit ? 0.7 : 1,
                     fontWeight: 900,
@@ -832,40 +896,36 @@ export default function DashboardPage() {
   );
 }
 
-const inputStyle: React.CSSProperties = {
-  padding: 10,
-  border: "1px solid #333",
-  borderRadius: 10,
-  background: "#0b0b0b",
-  color: "white",
-};
-
 function UpcomingSection({
   title,
   tasks,
   tone,
   onOpen,
+  theme,
 }: {
   title: string;
   tasks: Task[];
   tone: "neutral" | "low" | "medium" | "high";
   onOpen: (t: Task) => void;
+  theme: "dark" | "light";
 }) {
+  const isDark = theme === "dark";
+
   if (tasks.length === 0) return null;
 
   return (
     <div
       style={{
-        border: "1px solid #222",
-        background: "#0b0b0b",
+        border: isDark ? "1px solid #222" : "1px solid #ddd",
+        background: isDark ? "#0b0b0b" : "white",
         borderRadius: 14,
         padding: 12,
         marginBottom: 10,
       }}
     >
       <div style={{ display: "flex", justifyContent: "space-between", gap: 10 }}>
-        <h3 style={{ margin: 0, fontWeight: 900, color: "white" }}>{title}</h3>
-        <Badge label={`${tasks.length}`} tone={tone} />
+        <h3 style={{ margin: 0, fontWeight: 900, color: isDark ? "white" : "black" }}>{title}</h3>
+        <Badge label={`${tasks.length}`} tone={tone} theme={theme} />
       </div>
 
       <div style={{ marginTop: 10, display: "grid", gap: 8 }}>
@@ -874,9 +934,9 @@ function UpcomingSection({
             key={t.id}
             onClick={() => onOpen(t)}
             style={{
-              border: "1px solid #333",
-              background: "#111",
-              color: "white",
+              border: isDark ? "1px solid #333" : "1px solid #ddd",
+              background: isDark ? "#111" : "#fafafa",
+              color: isDark ? "white" : "black",
               borderRadius: 12,
               padding: "10px 12px",
               textAlign: "left",
@@ -890,7 +950,9 @@ function UpcomingSection({
           </button>
         ))}
         {tasks.length > 5 && (
-          <div style={{ opacity: 0.7, color: "white" }}>+{tasks.length - 5} mehr…</div>
+          <div style={{ opacity: 0.7, color: isDark ? "white" : "black" }}>
+            +{tasks.length - 5} mehr…
+          </div>
         )}
       </div>
     </div>
@@ -901,20 +963,28 @@ function Chip({
   label,
   active,
   onClick,
+  theme,
 }: {
   label: string;
   active: boolean;
   onClick: () => void;
+  theme: "dark" | "light";
 }) {
+  const isDark = theme === "dark";
+
   return (
     <button
       onClick={onClick}
       style={{
         padding: "8px 12px",
         borderRadius: 999,
-        border: active ? "1px solid white" : "1px solid #333",
-        background: active ? "white" : "#111",
-        color: active ? "black" : "white",
+        border: active
+          ? "1px solid white"
+          : isDark
+          ? "1px solid #333"
+          : "1px solid #ddd",
+        background: active ? (isDark ? "white" : "black") : isDark ? "#111" : "white",
+        color: active ? (isDark ? "black" : "white") : isDark ? "white" : "black",
         cursor: "pointer",
         fontWeight: 900,
         fontSize: 14,
@@ -929,10 +999,14 @@ function Chip({
 function Badge({
   label,
   tone = "neutral",
+  theme,
 }: {
   label: string;
   tone?: "neutral" | "low" | "medium" | "high";
+  theme: "dark" | "light";
 }) {
+  const isDark = theme === "dark";
+
   const toneStyle =
     tone === "low"
       ? { border: "1px solid #1f6f43", background: "#0f1f16", color: "#7CFFA6" }
@@ -940,7 +1014,11 @@ function Badge({
       ? { border: "1px solid #6b5b1a", background: "#1b1607", color: "#FFD36A" }
       : tone === "high"
       ? { border: "1px solid #6b1a1a", background: "#1b0707", color: "#FF7A7A" }
-      : { border: "1px solid #333", background: "#111", color: "white" };
+      : {
+          border: isDark ? "1px solid #333" : "1px solid #ddd",
+          background: isDark ? "#111" : "white",
+          color: isDark ? "white" : "black",
+        };
 
   return (
     <span

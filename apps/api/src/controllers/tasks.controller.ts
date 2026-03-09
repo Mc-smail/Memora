@@ -1,5 +1,6 @@
 import type { Request, Response } from "express";
 import { prisma } from "../db";
+import { createTaskSchema, updateTaskSchema } from "../validators/task.schemas";
 
 export async function getTasks(req: Request, res: Response) {
   const userId = req.userId!;
@@ -11,54 +12,78 @@ export async function getTasks(req: Request, res: Response) {
 
   res.json(tasks);
 }
-
 export async function createTask(req: Request, res: Response) {
-  const userId = req.userId!;
-
-  const { title, subject, priority, notes, dueDate } = req.body;
-
-  if (!title || !String(title).trim()) {
-    return res.status(400).json({ message: "Title is required" });
+  const userId = req.userId;
+  if (!userId) {
+    return res.status(401).json({ error: "Unauthorized" });
   }
+
+  const parsed = createTaskSchema.safeParse(req.body);
+
+  if (!parsed.success) {
+    return res.status(400).json({
+      error: parsed.error.issues[0]?.message || "Ungültige Eingaben",
+    });
+  }
+
+  const { title, subject, dueDate, priority, notes } = parsed.data;
 
   const task = await prisma.task.create({
     data: {
-      title: String(title).trim(),
-      subject: subject ? String(subject).trim() : null,
-      priority: priority ? String(priority) : "medium",
-      notes: notes ? String(notes).trim() : null,
-      dueDate: dueDate ? new Date(dueDate) : null,
+      title,
+      completed: false,
       userId,
+      subject: subject ?? null,
+      dueDate: dueDate ? new Date(dueDate) : null,
+      priority: priority ?? "medium",
+      notes: notes ?? null,
     },
   });
 
-  res.status(201).json(task);
+  return res.status(201).json(task);
 }
 
 export async function updateTask(req: Request, res: Response) {
-  const userId = req.userId!;
-  const { id } = req.params;
-
-  const existing = await prisma.task.findUnique({ where: { id } });
-  if (!existing || existing.userId !== userId) {
-    return res.status(404).json({ message: "Task not found" });
+  const userId = req.userId;
+  if (!userId) {
+    return res.status(401).json({ error: "Unauthorized" });
   }
 
-  const { title, completed, subject, priority, notes, dueDate } = req.body;
+  const { id } = req.params;
 
-  const updated = await prisma.task.update({
+  const parsed = updateTaskSchema.safeParse(req.body);
+
+  if (!parsed.success) {
+    return res.status(400).json({
+      error: parsed.error.issues[0]?.message || "Ungültige Eingaben",
+    });
+  }
+
+  const data = parsed.data;
+
+  const existingTask = await prisma.task.findFirst({
+    where: { id, userId },
+  });
+
+  if (!existingTask) {
+    return res.status(404).json({ error: "Task not found" });
+  }
+
+  const updatedTask = await prisma.task.update({
     where: { id },
     data: {
-      title: title !== undefined ? String(title).trim() : undefined,
-      completed: completed !== undefined ? Boolean(completed) : undefined,
-      subject: subject !== undefined ? (subject ? String(subject).trim() : null) : undefined,
-      priority: priority !== undefined ? String(priority) : undefined,
-      notes: notes !== undefined ? (notes ? String(notes).trim() : null) : undefined,
-      dueDate: dueDate !== undefined ? (dueDate ? new Date(dueDate) : null) : undefined,
+      ...(data.title !== undefined ? { title: data.title } : {}),
+      ...(data.completed !== undefined ? { completed: data.completed } : {}),
+      ...(data.subject !== undefined ? { subject: data.subject ?? null } : {}),
+      ...(data.dueDate !== undefined
+        ? { dueDate: data.dueDate ? new Date(data.dueDate) : null }
+        : {}),
+      ...(data.priority !== undefined ? { priority: data.priority ?? "medium" } : {}),
+      ...(data.notes !== undefined ? { notes: data.notes ?? null } : {}),
     },
   });
 
-  res.json(updated);
+  return res.json(updatedTask);
 }
 
 export async function deleteTask(req: Request, res: Response) {

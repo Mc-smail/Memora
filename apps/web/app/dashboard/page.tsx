@@ -366,6 +366,26 @@ export default function DashboardPage() {
     return { total, done, open };
   }, [tasks]);
 
+  const progress = useMemo(() => {
+    if (stats.total === 0) return 0;
+    return Math.round((stats.done / stats.total) * 100);
+  }, [stats]);
+
+  const streak = useMemo(() => {
+    const today = new Date();
+    const todayKey = `${today.getFullYear()}-${today.getMonth()}-${today.getDate()}`;
+
+    const hasCompletedToday = tasks.some((task) => {
+      if (!task.completed || !task.dueDate) return false;
+
+      const d = new Date(task.dueDate);
+      const taskKey = `${d.getFullYear()}-${d.getMonth()}-${d.getDate()}`;
+      return taskKey === todayKey;
+    });
+
+    return hasCompletedToday ? 1 : 0;
+  }, [tasks]);
+
   function openEdit(task: Task) {
     setEditing(task);
     setETitle(task.title || "");
@@ -459,6 +479,45 @@ export default function DashboardPage() {
             <Badge label={`Total: ${stats.total}`} theme={theme} />
             <Badge label={`Offen: ${stats.open}`} theme={theme} />
             <Badge label={`Erledigt: ${stats.done}`} theme={theme} />
+            <Badge label={`🔥 Streak: ${streak}`} theme={theme} />
+          </div>
+
+          <div style={{ marginTop: 16 }}>
+            <div
+              style={{
+                display: "flex",
+                justifyContent: "space-between",
+                marginBottom: 8,
+                fontSize: 14,
+                opacity: 0.85,
+                color: isDark ? "white" : "black",
+              }}
+            >
+              <span>Fortschritt</span>
+              <span>
+                {stats.done} / {stats.total} erledigt ({progress}%)
+              </span>
+            </div>
+
+            <div
+              style={{
+                width: "100%",
+                height: 12,
+                borderRadius: 999,
+                background: isDark ? "#1a1a1a" : "#e5e5e5",
+                overflow: "hidden",
+                border: isDark ? "1px solid #333" : "1px solid #ddd",
+              }}
+            >
+              <div
+                style={{
+                  width: `${progress}%`,
+                  height: "100%",
+                  background: progress === 100 ? "#22c55e" : "#3b82f6",
+                  transition: "width 0.3s ease",
+                }}
+              />
+            </div>
           </div>
         </div>
 
@@ -979,7 +1038,9 @@ function Chip({
         padding: "8px 12px",
         borderRadius: 999,
         border: active
-          ? "1px solid white"
+          ? isDark
+            ? "1px solid white"
+            : "1px solid black"
           : isDark
           ? "1px solid #333"
           : "1px solid #ddd",

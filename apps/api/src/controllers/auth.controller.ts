@@ -3,20 +3,24 @@ import type { Request, Response } from "express";
 import { prisma } from "../db";
 import { signToken } from "../auth";
 import type { AuthedRequest } from "../middleware/authMiddleware";
+import { registerSchema, loginSchema } from "../validators/auth.schemas";
 
 export async function register(req: Request, res: Response) {
-  const { email, password, name } = req.body as {
-    email?: string;
-    password?: string;
-    name?: string;
-  };
+  const parsed = registerSchema.safeParse(req.body);
 
-  if (!email || !password) {
-    return res.status(400).json({ error: "email and password are required" });
+  if (!parsed.success) {
+    return res.status(400).json({
+      error: parsed.error.issues[0]?.message || "Ungültige Eingaben",
+    });
   }
 
-  const existing = await prisma.user.findUnique({ where: { email } });
-  if (existing) {
+  const { email, password, name } = parsed.data;
+
+  const existingUser = await prisma.user.findUnique({
+    where: { email },
+  });
+
+  if (existingUser) {
     return res.status(409).json({ error: "email already in use" });
   }
 
@@ -26,25 +30,26 @@ export async function register(req: Request, res: Response) {
     data: {
       email,
       password: hashedPassword,
-      name: name ?? null,
-    },
-    select: {
-      id: true,
-      email: true,
-      name: true,
-      createdAt: true,
+      name,
     },
   });
 
-  return res.status(201).json({ user });
+  return res.status(201).json({
+    id: user.id,
+    email: user.email,
+    name: user.name,
+  });
 }
-
 export async function login(req: Request, res: Response) {
-  const { email, password } = req.body as { email?: string; password?: string };
+  const parsed = loginSchema.safeParse(req.body);
 
-  if (!email || !password) {
-    return res.status(400).json({ error: "email and password are required" });
+  if (!parsed.success) {
+    return res.status(400).json({
+      error: parsed.error.issues[0]?.message || "Ungültige Eingaben",
+    });
   }
+
+  const { email, password } = parsed.data;
 
   const user = await prisma.user.findUnique({ where: { email } });
   if (!user) {

@@ -6,8 +6,10 @@ import { prisma } from "./db";
 import { tasksRouter } from "./routes/tasks.routes";
 import { authRouter } from "./routes/auth.routes";
 import { errorMiddleware } from "./middleware/errorMiddleware";
+import helmet from "helmet";
 
 const app = express();
+app.use(helmet());
 
 /* ✅ CORS FIX (TypeScript-safe) */
 const allowedOrigins = [

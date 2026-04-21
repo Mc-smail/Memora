@@ -6,6 +6,6 @@ import { authRateLimit } from "../middleware/rateLimit";
 
 export const authRouter = Router();
 
-router.post("/auth/register", authRateLimit, register);
-router.post("/auth/login", authRateLimit, login);
+authRouter.post("/auth/register", authRateLimit, asyncHandler(register));
+authRouter.post("/auth/login", authRateLimit, asyncHandler(login));
 authRouter.get("/me", authMiddleware, asyncHandler(me));

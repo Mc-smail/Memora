@@ -31,3 +31,13 @@ The project combines a Next.js frontend with an Express API, Prisma and PostgreS
 - Prisma
 - PostgreSQL
 - JWT authentication
+
+## Repository Structure
+
+```text
+apps/
+  web/   # Next.js frontend
+  api/   # Express backend with Prisma
+```
+
+The project is organized as a small monorepo with separate applications for the user interface and the API.

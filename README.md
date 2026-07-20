@@ -41,3 +41,13 @@ apps/
 ```
 
 The project is organized as a small monorepo with separate applications for the user interface and the API.
+
+## Prerequisites
+
+Before running the project, install:
+
+- Node.js
+- npm
+- PostgreSQL
+
+A local PostgreSQL database is required for the API.

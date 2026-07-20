@@ -110,3 +110,13 @@ More detailed notes are available in the `docs/` directory:
 - Database layer
 - Development guide
 - Troubleshooting
+
+## Roadmap
+
+Possible future improvements:
+
+- Add calendar view for planned study sessions
+- Add progress statistics
+- Add recurring tasks
+- Add study streak tracking
+- Add deployment documentation

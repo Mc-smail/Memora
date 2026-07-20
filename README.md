@@ -77,3 +77,9 @@ The frontend is available at:
 ```text
 http://localhost:3000
 ```
+
+## Environment Variables
+
+The API requires environment variables for the database connection and JWT signing.
+
+See `apps/api/.env.example` for a template.

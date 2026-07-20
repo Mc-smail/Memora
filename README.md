@@ -83,3 +83,18 @@ http://localhost:3000
 The API requires environment variables for the database connection and JWT signing.
 
 See `apps/api/.env.example` for a template.
+
+## Database Workflow
+
+Generate the Prisma client:
+
+```bash
+cd apps/api
+npm run prisma:generate
+```
+
+Apply migrations in deployment environments:
+
+```bash
+npm run prisma:migrate
+```

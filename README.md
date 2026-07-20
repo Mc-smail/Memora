@@ -98,3 +98,15 @@ Apply migrations in deployment environments:
 ```bash
 npm run prisma:migrate
 ```
+
+## Documentation
+
+More detailed notes are available in the `docs/` directory:
+
+- API notes
+- Frontend notes
+- Backend notes
+- Authentication flow
+- Database layer
+- Development guide
+- Troubleshooting

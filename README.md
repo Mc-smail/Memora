@@ -51,3 +51,15 @@ Before running the project, install:
 - PostgreSQL
 
 A local PostgreSQL database is required for the API.
+
+## Backend Setup
+
+```bash
+cd apps/api
+npm install
+cp .env.example .env
+npm run prisma:generate
+npm run dev
+```
+
+The backend starts the Express API in development mode.

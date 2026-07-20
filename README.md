@@ -63,3 +63,17 @@ npm run dev
 ```
 
 The backend starts the Express API in development mode.
+
+## Frontend Setup
+
+```bash
+cd apps/web
+npm install
+npm run dev
+```
+
+The frontend is available at:
+
+```text
+http://localhost:3000
+```

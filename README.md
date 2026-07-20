@@ -13,3 +13,21 @@ The project combines a Next.js frontend with an Express API, Prisma and PostgreS
 - Backend validation with Zod
 - Prisma-based database access
 - Separate frontend and backend apps
+
+## Tech Stack
+
+### Frontend
+
+- Next.js
+- React
+- TypeScript
+- Tailwind CSS
+
+### Backend
+
+- Node.js
+- Express
+- TypeScript
+- Prisma
+- PostgreSQL
+- JWT authentication
